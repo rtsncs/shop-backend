@@ -1,0 +1,36 @@
+name: Azure
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+
+        - name: Login to ACR
+          uses: azure/docker-login@v1
+          with:
+            login-server: ebiznes-fgggcab8ahe0arc9.azurecr.io
+            username: ${{ secrets.REGISTRY_USERNAME }}
+            password: ${{ secrets.REGISTRY_PASSWORD }}
+
+        - name: Build and push image
+          run: |
+            docker build . -t ebiznes-fgggcab8ahe0arc9.azurecr.io/backend:${{ github.sha }}
+            docker push ebiznes-fgggcab8ahe0arc9.azurecr.io/backend:${{ github.sha }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to Azure Web App
+        id: deploy-to-webapp
+        uses: Azure/webapps-deploy@v3.0.1
+        with:
+          app-name: backend
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
